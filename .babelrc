@@ -1,0 +1,18 @@
+{
+  "presets": [
+    [
+      "@babel/preset-env",
+      {
+        "targets": {
+          "browsers": [
+            "defaults",
+            "ie >= 11",
+            "safari >= 8"
+          ],
+          "node": "current"
+        }
+      }
+    ],
+    "@babel/preset-react",
+  ],
+}

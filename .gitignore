@@ -1,0 +1,12 @@
+# OS or Editor folders
+.DS_Store
+.cache
+.project
+.settings
+Thumbs.db
+
+# NPM packages folder.
+node_modules
+
+# Test coverage folder
+coverage

@@ -1,0 +1,50 @@
+{
+  "name": "use-form-linker",
+  "version": "1.0.0",
+  "description": "links form elements together using React hooks",
+  "main": "index.js",
+  "scripts": {
+    "lint": "eslint src test",
+    "build": "babel src --out-dir dist",
+    "test": "jest --silent"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/EvanMorrison/use-form-linker.git"
+  },
+  "keywords": [
+    "React",
+    "forms",
+    "validation",
+    "hooks",
+    "formLinker"
+  ],
+  "author": "EvanMorrison",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/EvanMorrison/use-form-linker/issues"
+  },
+  "homepage": "https://github.com/EvanMorrison/use-form-linker#readme",
+  "dependencies": {
+    "lodash": "^4.17.14",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6"
+  },
+  "devDependencies": {
+    "@babel/cli": "^7.5.0",
+    "@babel/core": "^7.5.4",
+    "@babel/preset-env": "^7.5.4",
+    "@babel/preset-react": "^7.0.0",
+    "@testing-library/react": "^8.0.5",
+    "babel-eslint": "^10.0.2",
+    "eslint": "^6.0.1",
+    "eslint-config-standard": "^13.0.1",
+    "eslint-plugin-import": "^2.18.0",
+    "eslint-plugin-node": "^9.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-react": "^7.14.2",
+    "eslint-plugin-standard": "^4.0.0",
+    "form-formatters": "^1.2.3",
+    "jest": "^24.8.0"
+  }
+}
