@@ -90,12 +90,12 @@ Formatters should have a format function that takes a single value.
 
 Formatters should return data in an object like:
 
-```json
+```js
 {
-errors: [],
-formatted: "$1,000.00",
-parsed: 1000.00,
-valid: true
+  errors: [],
+  formatted: "$1,000.00",
+  parsed: 1000.00,
+  valid: true
 }
 ```
 
@@ -144,13 +144,11 @@ setValues(value<Object>) Sets values for all keys in object. Uses key/attr as fi
 
 ### Differences Functions
 
-`extractDifferences(original<Object>, fields<Array<String>>);
+`extractDifferences(original<Object>, fields<Array<String>>)` Returns a differences object. Each key represents a field with changes from the original data. The value of the object represents the current value.
 
-Returns a differences object. Each key represents a field with changes from the original data. The value of the object represents the current value.
+`original` represents the original data set.
 
-original represents the original data set.
-
-Fields represents an array of strings specifying the fields to check.
+`fields` represents an array of strings specifying the fields to check.
 
 
 ### Update Schema Functions
