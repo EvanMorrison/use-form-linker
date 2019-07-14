@@ -20,7 +20,7 @@ Basic
 import { EmailFormatter, EmailMask, NumberFormatter, NumberMask, RequiredFormatter } from "form-formatter";
 import useFormLinker from "use-form-linker";
 
-export default const Example = () => {
+const Example = () => {
   const fl = useFormLinker({
     data: {
       age: 23,
