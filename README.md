@@ -1,11 +1,8 @@
 # use-form-linker
-A React custom hooks version of [FormLinker](https://github.com/AlchemyAlcove/FormLinker) (["form-linker" on npm](https://www.npmjs.com/package/form-linker)).
-
-# Use Form Linker
-
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/EvanMorrison/use-form-linker/blob/master/LICENSE)
 
-A React custom hook to link form elements to each other and perform validation.
+A React custom hooks version of [FormLinker](https://github.com/AlchemyAlcove/FormLinker) (["form-linker" on npm](https://www.npmjs.com/package/form-linker)).
+Links form elements to each other and performs validation.
 
 ## Install
 
