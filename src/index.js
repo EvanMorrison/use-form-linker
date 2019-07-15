@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { cloneDeep, get, isEmpty, isEqual, isNil, keys, set, unset } from "lodash";
 
 /**
@@ -14,7 +14,7 @@ import { cloneDeep, get, isEmpty, isEqual, isNil, keys, set, unset } from "lodas
 const useFormLinker = (config = {}) => {
   const initialData = config.data || {};
   const initialSchema = config.schema || {};
-  const originalData = cloneDeep(config.data);
+  const [originalData, setOriginalData] = useState();
   const [fields, setFields] = useState(calcFields(initialSchema));
   const [schema, setSchema] = useState(initialSchema);
   const [data, setData] = useState({});
@@ -26,6 +26,7 @@ const useFormLinker = (config = {}) => {
   const masks = config.masks || {};
 
   useEffect(() => {
+    setOriginalData(initialData);
     setValuesFromParsed(initialData);
   }, []);
 
@@ -72,26 +73,40 @@ const useFormLinker = (config = {}) => {
    * ERRORS
    */
 
+  function getError(fieldName) {
+    return(get(formErrors, fieldName) || []);
+  }
+
   function setError(fieldName, newErrors) {
-    if(isEmpty(newErrors)) {
-      const nextErrors = cloneDeep(formErrors);
-      unset(nextErrors, fieldName);
-      if(fieldName.includes(".")) {
-        let currentPath = fieldName.slice(0, fieldName.lastIndexOf("."));
-        while(currentPath) {
-          if(isEmpty(get(nextErrors, currentPath))) {
-            unset(nextErrors, currentPath);
-            currentPath = currentPath.slice(0, currentPath.lastIndexOf("."));
-          } else {
-            break;
+    setFormErrors(formErrors => {
+      if(isEmpty(newErrors)) {
+        const nextErrors = cloneDeep(formErrors);
+        unset(nextErrors, fieldName);
+        if(fieldName.includes(".")) {
+          let currentPath = fieldName.slice(0, fieldName.lastIndexOf("."));
+          while(currentPath) {
+            if(isEmpty(get(nextErrors, currentPath))) {
+              unset(nextErrors, currentPath);
+              currentPath = currentPath.slice(0, currentPath.lastIndexOf("."));
+            } else {
+              break;
+            }
           }
         }
+        return(nextErrors);
+      } else {
+        const nextErrors = set({}, fieldName, newErrors);
+        return({...formErrors, ...nextErrors});
       }
-      setFormErrors(nextErrors);
-    } else {
-      const nextErrors = set({}, fieldName, newErrors);
-      setFormErrors(formErrors => ({...formErrors, ...nextErrors}));
-    }
+    });
+  }
+
+  function getErrors() {
+    return(formErrors);
+  }
+
+  function setErrors(newErrors) {
+    setFormErrors(newErrors);
   }
 
   /**
@@ -108,7 +123,11 @@ const useFormLinker = (config = {}) => {
     const nextParsedData = set({}, fieldName, parsed);
     setData(data => ({...data, ...nextData}));
     setParsedData(parsedData => ({...parsedData, ...nextParsedData}));
-    if(isEmpty(errors)) { setError(fieldName, errors); }
+    if(isEmpty(errors) && !isEmpty(get(formErrors, fieldName))) { setError(fieldName, []); }
+  }
+
+  function getValues() {
+    return(data);
   }
 
   function setValues(values) {
@@ -154,8 +173,7 @@ const useFormLinker = (config = {}) => {
 
   function validate(fieldName) {
     const {errors, formatted, parsed} = format(fieldName, getValue(fieldName));
-    const nextErrors = set({}, fieldName, errors);
-    setFormErrors(formErrors => ({...formErrors, ...nextErrors}));
+    setError(fieldName, errors);
     const nextData = set({}, fieldName, formatted);
     setData(data => ({...data, ...nextData}));
     const nextParsed = set({}, fieldName, parsed);
@@ -216,23 +234,23 @@ const useFormLinker = (config = {}) => {
     errors: formErrors,
     fields,
     calcFields: () => setFields(calcFields(schema)),
-    convert: useCallback((fieldName, value) => convert(fieldName, value)),
-    format: useCallback((fieldName, value) => format(fieldName, value)),
-    mask: useCallback((fieldName, value) => mask(fieldName, value)),
-    getError: useCallback((fieldName) => get(formErrors, fieldName) || []),
-    getErrors: () => formErrors,
-    setError: useCallback((fieldName, newErrors) => setError(fieldName, newErrors)),
-    setErrors: useCallback((newErrors) => setFormErrors(newErrors)),
-    getValue: useCallback((fieldName) => getValue(fieldName)),
-    getValues: () => data,
-    setValue: useCallback((fieldName, value) => setValue(fieldName, value)),
-    setValues: useCallback((values) => setValues(values)),
-    setValuesFromParsed: useCallback((values) => setValuesFromParsed(values)),
-    isValid: isValid,
-    validate: fieldName => validate(fieldName),
-    validateAll: validateAll,
-    extractDifferences: useCallback((original = originalData) => extractDifferences(original)),
-    updateSchema: useCallback(newSchema => updateSchema(newSchema)),
+    convert,
+    format,
+    mask,
+    getError,
+    getErrors,
+    setError,
+    setErrors,
+    getValue,
+    getValues,
+    setValue,
+    setValues,
+    setValuesFromParsed,
+    isValid,
+    validate,
+    validateAll,
+    extractDifferences,
+    updateSchema,
   });
 };
 

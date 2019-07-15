@@ -1,7 +1,7 @@
 # use-form-linker
 A React custom hooks version of [FormLinker](https://github.com/AlchemyAlcove/FormLinker) (["form-linker" on npm](https://www.npmjs.com/package/form-linker)).
 
-# Form Linker
+# Use Form Linker
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/EvanMorrison/use-form-linker/blob/master/LICENSE)
 
