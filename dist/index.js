@@ -3,6 +3,7 @@
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
+exports.arePropsEqual = arePropsEqual;
 exports.default = void 0;
 
 var _react = _interopRequireWildcard(require("react"));
@@ -40,37 +41,42 @@ var useFormLinker = function useFormLinker() {
   var config = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : {};
   var initialData = config.data || {};
   var initialSchema = config.schema || {};
-  var originalData = (0, _lodash.cloneDeep)(config.data);
 
-  var _useState = (0, _react.useState)(_calcFields(initialSchema)),
+  var _useState = (0, _react.useState)(),
       _useState2 = _slicedToArray(_useState, 2),
-      fields = _useState2[0],
-      setFields = _useState2[1];
+      originalData = _useState2[0],
+      setOriginalData = _useState2[1];
 
-  var _useState3 = (0, _react.useState)(initialSchema),
+  var _useState3 = (0, _react.useState)(_calcFields(initialSchema)),
       _useState4 = _slicedToArray(_useState3, 2),
-      schema = _useState4[0],
-      setSchema = _useState4[1];
+      fields = _useState4[0],
+      setFields = _useState4[1];
 
-  var _useState5 = (0, _react.useState)({}),
+  var _useState5 = (0, _react.useState)(initialSchema),
       _useState6 = _slicedToArray(_useState5, 2),
-      data = _useState6[0],
-      setData = _useState6[1];
+      schema = _useState6[0],
+      setSchema = _useState6[1];
 
-  var _useState7 = (0, _react.useState)(initialData),
+  var _useState7 = (0, _react.useState)({}),
       _useState8 = _slicedToArray(_useState7, 2),
-      parsedData = _useState8[0],
-      setParsedData = _useState8[1];
+      data = _useState8[0],
+      setData = _useState8[1];
 
-  var _useState9 = (0, _react.useState)({}),
+  var _useState9 = (0, _react.useState)(initialData),
       _useState10 = _slicedToArray(_useState9, 2),
-      formErrors = _useState10[0],
-      setFormErrors = _useState10[1];
+      parsedData = _useState10[0],
+      setParsedData = _useState10[1];
+
+  var _useState11 = (0, _react.useState)({}),
+      _useState12 = _slicedToArray(_useState11, 2),
+      formErrors = _useState12[0],
+      setFormErrors = _useState12[1];
 
   var converters = config.converters || {};
   var formatters = config.formatters || {};
   var masks = config.masks || {};
   (0, _react.useEffect)(function () {
+    setOriginalData(initialData);
     setValuesFromParsed(initialData);
   }, []);
 
@@ -133,32 +139,44 @@ var useFormLinker = function useFormLinker() {
    */
 
 
+  function getError(fieldName) {
+    return (0, _lodash.get)(formErrors, fieldName) || [];
+  }
+
   function setError(fieldName, newErrors) {
-    if ((0, _lodash.isEmpty)(newErrors)) {
-      var nextErrors = (0, _lodash.cloneDeep)(formErrors);
-      (0, _lodash.unset)(nextErrors, fieldName);
+    setFormErrors(function (formErrors) {
+      if ((0, _lodash.isEmpty)(newErrors)) {
+        var nextErrors = (0, _lodash.cloneDeep)(formErrors);
+        (0, _lodash.unset)(nextErrors, fieldName);
 
-      if (fieldName.includes(".")) {
-        var currentPath = fieldName.slice(0, fieldName.lastIndexOf("."));
+        if (fieldName.includes(".")) {
+          var currentPath = fieldName.slice(0, fieldName.lastIndexOf("."));
 
-        while (currentPath) {
-          if ((0, _lodash.isEmpty)((0, _lodash.get)(nextErrors, currentPath))) {
-            (0, _lodash.unset)(nextErrors, currentPath);
-            currentPath = currentPath.slice(0, currentPath.lastIndexOf("."));
-          } else {
-            break;
+          while (currentPath) {
+            if ((0, _lodash.isEmpty)((0, _lodash.get)(nextErrors, currentPath))) {
+              (0, _lodash.unset)(nextErrors, currentPath);
+              currentPath = currentPath.slice(0, currentPath.lastIndexOf("."));
+            } else {
+              break;
+            }
           }
         }
-      }
 
-      setFormErrors(nextErrors);
-    } else {
-      var _nextErrors = (0, _lodash.set)({}, fieldName, newErrors);
+        return nextErrors;
+      } else {
+        var _nextErrors = (0, _lodash.set)({}, fieldName, newErrors);
 
-      setFormErrors(function (formErrors) {
         return _objectSpread({}, formErrors, {}, _nextErrors);
-      });
-    }
+      }
+    });
+  }
+
+  function getErrors() {
+    return formErrors;
+  }
+
+  function setErrors(newErrors) {
+    setFormErrors(newErrors);
   }
   /**
    * VALUES
@@ -184,9 +202,13 @@ var useFormLinker = function useFormLinker() {
       return _objectSpread({}, parsedData, {}, nextParsedData);
     });
 
-    if ((0, _lodash.isEmpty)(errors)) {
-      setError(fieldName, errors);
+    if ((0, _lodash.isEmpty)(errors) && !(0, _lodash.isEmpty)((0, _lodash.get)(formErrors, fieldName))) {
+      setError(fieldName, []);
     }
+  }
+
+  function getValues() {
+    return data;
   }
 
   function setValues(values) {
@@ -238,16 +260,13 @@ var useFormLinker = function useFormLinker() {
     return flag;
   }
 
-  function _validate(fieldName) {
+  function validate(fieldName) {
     var _format3 = format(fieldName, getValue(fieldName)),
         errors = _format3.errors,
         formatted = _format3.formatted,
         parsed = _format3.parsed;
 
-    var nextErrors = (0, _lodash.set)({}, fieldName, errors);
-    setFormErrors(function (formErrors) {
-      return _objectSpread({}, formErrors, {}, nextErrors);
-    });
+    setError(fieldName, errors);
     var nextData = (0, _lodash.set)({}, fieldName, formatted);
     setData(function (data) {
       return _objectSpread({}, data, {}, nextData);
@@ -304,7 +323,7 @@ var useFormLinker = function useFormLinker() {
     setFormErrors({});
   }
   /**
-   * RETURN OBJECT: containing state and functions
+   * RETURN OBJECT: containing state and functions with the same interface as the FormLinker class from "form-linker".
    */
 
 
@@ -318,56 +337,87 @@ var useFormLinker = function useFormLinker() {
     calcFields: function calcFields() {
       return setFields(_calcFields(schema));
     },
-    convert: (0, _react.useCallback)(function (fieldName, value) {
-      return convert(fieldName, value);
-    }),
-    format: (0, _react.useCallback)(function (fieldName, value) {
-      return format(fieldName, value);
-    }),
-    mask: (0, _react.useCallback)(function (fieldName, value) {
-      return mask(fieldName, value);
-    }),
-    getError: (0, _react.useCallback)(function (fieldName) {
-      return (0, _lodash.get)(formErrors, fieldName) || [];
-    }),
-    getErrors: function getErrors() {
-      return formErrors;
-    },
-    setError: (0, _react.useCallback)(function (fieldName, newErrors) {
-      return setError(fieldName, newErrors);
-    }),
-    setErrors: (0, _react.useCallback)(function (newErrors) {
-      return setFormErrors(newErrors);
-    }),
-    getValue: (0, _react.useCallback)(function (fieldName) {
-      return getValue(fieldName);
-    }),
-    getValues: function getValues() {
-      return data;
-    },
-    setValue: (0, _react.useCallback)(function (fieldName, value) {
-      return setValue(fieldName, value);
-    }),
-    setValues: (0, _react.useCallback)(function (values) {
-      return setValues(values);
-    }),
-    setValuesFromParsed: (0, _react.useCallback)(function (values) {
-      return setValuesFromParsed(values);
-    }),
+    convert: convert,
+    format: format,
+    mask: mask,
+    getError: getError,
+    getErrors: getErrors,
+    setError: setError,
+    setErrors: setErrors,
+    getValue: getValue,
+    getValues: getValues,
+    setValue: setValue,
+    setValues: setValues,
+    setValuesFromParsed: setValuesFromParsed,
     isValid: isValid,
-    validate: function validate(fieldName) {
-      return _validate(fieldName);
-    },
+    validate: validate,
     validateAll: validateAll,
-    extractDifferences: (0, _react.useCallback)(function () {
-      var original = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : originalData;
-      return extractDifferences(original);
-    }),
-    updateSchema: (0, _react.useCallback)(function (newSchema) {
-      return updateSchema(newSchema);
-    })
+    extractDifferences: extractDifferences,
+    updateSchema: updateSchema,
+    arePropsEqual: arePropsEqual
   };
 };
 
 var _default = useFormLinker;
+/**
+ * Functions to help with shouldComponentUpdate or React.memo
+ *
+ * FormLinker or useFormLinker are useful for handling forms but can result in terrible performance
+ * bacause a change anywhere in the form causes a rerender of everything in the form. To optimize
+ * responsiveness of forms to user input it's important to minimize the amount of rerendering using
+ * shouldComponentUpdate (or React.memo for functional component).
+ *
+ * Having FormLinker/useFormLinker in the props causes the props-nextProps comparison to always return as
+ * having changes even if nothing changed for a particular Field, so the comparison needs to be handled manually.
+ * arePropsEqual returns a boolean for whether props and nextProps are equal for a given fieldName in the form.
+ */
+
 exports.default = _default;
+
+function isFLEqual(currentFormLinker, nextFormLinker, fieldName) {
+  return (0, _lodash.isEqualWith)(currentFormLinker, nextFormLinker, function (val1, val2, key) {
+    // only consider data or errors to have changed if the changed value is for the current Field
+    if (key === "data") {
+      if (val1[fieldName] !== val2[fieldName]) {
+        return false;
+      }
+
+      return true;
+    }
+
+    if (key === "errors") {
+      if ((0, _lodash.isNil)(val1[fieldName]) && (0, _lodash.isNil)(val2[fieldName])) {
+        return true;
+      }
+
+      if (val1[fieldName] !== val2[fieldName]) {
+        return false;
+      }
+
+      return true;
+    } // changes to formLinker fields or functions other than data & errors should not trigger a rerender so consider them equal
+
+
+    if (!(0, _lodash.isNil)(key)) {
+      return true;
+    }
+  });
+}
+
+;
+
+function arePropsEqual(props, nextProps, fieldName) {
+  return (0, _lodash.isEqualWith)(props, nextProps, function (val1, val2, key) {
+    // formLinker will always cause the props to change, so handle the comparison manually
+    if (key === "formLinker") {
+      return isFLEqual(props.formLinker, nextProps.formLinker, fieldName);
+    } // for all other props just make the usual shallow comparison
+
+
+    if (!(0, _lodash.isNil)(key) && val1 !== val2) {
+      return false;
+    }
+  });
+}
+
+;
