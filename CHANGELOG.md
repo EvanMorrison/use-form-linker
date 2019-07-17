@@ -1,4 +1,7 @@
 ## [Unreleased]
+-
+
+## V1.0.2
 - add function to help with optimizations using React.memo or shouldComponentUpdate;
 
 ## V1.0.1
