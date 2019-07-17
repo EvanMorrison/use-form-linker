@@ -1,7 +1,7 @@
 # use-form-linker
-[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat-square)](https://github.com/EvanMorrison/use-form-linker/blob/master/LICENSE)
+[![npm](https://img.shields.io/npm/v/use-form-linker.svg?color=%23CC3534&logo=npm)](https://www.npmjs.com/package/use-form-linker) [![License](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/EvanMorrison/use-form-linker/blob/master/LICENSE)
 
-A React custom hooks version of [FormLinker](https://github.com/AlchemyAlcove/FormLinker) (["form-linker" on npm](https://www.npmjs.com/package/form-linker)).
+A React custom hooks version of [form-linker](https://www.npmjs.com/package/form-linker).
 Links form elements to each other and performs validation.
 
 ## Install
@@ -14,7 +14,7 @@ Basic
 
 ```js
 ...
-import { EmailFormatter, EmailMask, NumberFormatter, NumberMask, RequiredFormatter } from "form-formatter";
+import { EmailFormatter, EmailMask, NumberFormatter, NumberMask, RequiredFormatter } from "form-formatters";
 import useFormLinker from "use-form-linker";
 
 const Example = () => {
@@ -67,13 +67,13 @@ const Input = (props) => {
 
 ### data
 
-Provide initial data for the form, using an object with field names as keys, structured to match the schema, e.g. `data: {name: "Jane"}`.
+Provide initial data for the form, using an object with field names as keys, structured to match the schema, e.g. `data: {name: "Jane"}`. The values in this object will be set as the initial values for `parsedData` in state (discussed below), and the values will be run through the `setValuesFromParsed` function to create the initial `data` object in state.
 
 ### schema
 
 Provide structure and type of data as nested object with field names as keys, and dot delimited string values setting the data type, e.g. `schema: {name: "string.required"}`.
 
-Each schema value string segment is represented in the converters, formatters and masks options. Converters are used to convert certain data types from the format received from the api to the format to be displayed in the form, e.g., a date in epoch form to a human readable calendar date. When validating, the schema and formatters are used to validate each form field. When setting a value the masks are used to limit user input to permitted characters, numbers and/or symbols.
+Each schema value segment is represented in the converters, formatters and masks options, i.e. "email" & "required" formatter, mask, and/or converter functions for an "email.required" schema value. Converters are used to convert certain data types from the format received from the api to the format to be displayed in the form, e.g., a date in epoch form to a human readable calendar date. When validating, the schema and formatters are used to validate each form field. When setting a value the masks are used to limit user input to permitted characters, numbers and/or symbols.
 
 ### converters
 
@@ -102,8 +102,37 @@ Object where keys match schema string values and values map to the mask to handl
 
 Makes should have a mask function that takes a single value and returns a single value.
 
+#### A note about converters, formatters, & masks: use-form-linker does not include the functions to perform converting, formatting & masking data, rather it is set up to utilitze those functions you provide from your own project or another library. For a quick start, a recommended library with a good selection of such functions is [form-formatters](https://www.npmjs.com/package/form-formatters), as used in the initial example code above.
 
-## Functions
+## Return value
+
+Use-form-linker returns an object containing state and a set of functions for accessing and updating the state. The return object matches the interface of the FormLinker class from the form-linker library.
+
+### **State**
+
+`data` - the form data as displayed to the user. An object with the same structure as the schema.
+
+`parsedData` - the form data as saved to or received from the api. An object with the same structure as the schema. The values may or may not be the same as those in the `data` state. For instance, dates, phone numbers, currency, or credit card numbers, etc. might be persisted in a database in a format that is not appropriate for display to the user.
+
+`originalData` - a copy of the initial data provided in the options.
+
+`schema` - a copy of the initial schema provided in the options, as may be updated using the `updateSchema` function.
+
+`errors` - the current error state for the form. An object structured like the schema but with values that are arrays of string error messages. A form with all fields in a valid state is an empty object. When an error is set the path for fieldName is added if not present, and when an error is cleared, the field is removed from the error state.
+
+`fields` - an array of the fieldNames in the form, auto-generated from the schema. If the schema contained
+  ```js
+  {
+    name: "string.required",
+    address: {
+      street: "string",
+      city: "string",
+    }
+  }
+```
+then the fields array would contain `["name", "address.street", "address.city", ...]`.
+
+### **Functions**
 
 ### Error Functions
 `getError(fieldName<String>)` Returns an array of error messages for the specified fieldName.

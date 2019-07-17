@@ -223,7 +223,7 @@ const useFormLinker = (config = {}) => {
   }
 
   /**
-   * RETURN OBJECT: containing state and functions
+   * RETURN OBJECT: containing state and functions with the same interface as the FormLinker class from "form-linker".
    */
 
   return({
