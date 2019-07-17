@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { cloneDeep, get, isEmpty, isEqual, isNil, keys, set, unset } from "lodash";
+import { cloneDeep, get, isEmpty, isEqual, isEqualWith, isNil, keys, set, unset } from "lodash";
 
 /**
  * use-form-linker emulates all the properties and methods of the
@@ -251,7 +251,51 @@ const useFormLinker = (config = {}) => {
     validateAll,
     extractDifferences,
     updateSchema,
+    arePropsEqual,
   });
 };
 
 export default useFormLinker;
+
+/**
+ * Functions to help with shouldComponentUpdate or React.memo
+ *
+ * FormLinker or useFormLinker are useful for handling forms but can result in terrible performance
+ * bacause a change anywhere in the form causes a rerender of everything in the form. To optimize
+ * responsiveness of forms to user input it's important to minimize the amount of rerendering using
+ * shouldComponentUpdate (or React.memo for functional component).
+ *
+ * Having FormLinker/useFormLinker in the props causes the props-nextProps comparison to always return as
+ * having changes even if nothing changed for a particular Field, so the comparison needs to be handled manually.
+ * arePropsEqual returns a boolean for whether props and nextProps are equal for a given fieldName in the form.
+ */
+
+function isFLEqual(currentFormLinker, nextFormLinker, fieldName) {
+  return(
+    isEqualWith(currentFormLinker, nextFormLinker, (val1, val2, key) => {
+      // only consider data or errors to have changed if the changed value is for the current Field
+      if(key === "data") {
+        if(val1[fieldName] !== val2[fieldName]) { return(false); }
+        return(true);
+      }
+      if(key === "errors") {
+        if(isNil(val1[fieldName]) && isNil(val2[fieldName])) { return(true); }
+        if(val1[fieldName] !== val2[fieldName]) { return(false); }
+        return(true);
+      }
+      // changes to formLinker fields or functions other than data & errors should not trigger a rerender so consider them equal
+      if(!isNil(key)) { return(true); }
+    })
+  );
+};
+
+export function arePropsEqual(props, nextProps, fieldName) {
+  return(
+    isEqualWith(props, nextProps, (val1, val2, key) => {
+      // formLinker will always cause the props to change, so handle the comparison manually
+      if(key === "formLinker") { return(isFLEqual(props.formLinker, nextProps.formLinker, fieldName)); }
+      // for all other props just make the usual shallow comparison
+      if(!isNil(key) && val1 !== val2) { return(false); }
+    })
+  );
+};
