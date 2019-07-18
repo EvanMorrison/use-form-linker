@@ -127,7 +127,7 @@ test("set errors", () => {
   expect(fl.getErrors()).toEqual({name: {first: [], last: ["FormFormatters.required"]}});
   act(() => {
     fl.setError("name.first", []);
-  })
+  });
   expect(fl.getErrors()).toEqual({name: {last: ["FormFormatters.required"]}});
 });
 
@@ -166,15 +166,15 @@ test("nested schema", () => {
   expect(input.value).toBe("");
   expect(fl.fields).toEqual(["name.first"]);
   fireEvent.blur(input);
-  let errors = fl.getErrors();
+  const errors = fl.getErrors();
   expect(errors).toEqual({name: {first: ["FormFormatters.required"]}});
   act(() => {
     fl.setValue("name.first", "Baz");
   });
   expect(input.value).toBe("Baz");
-  let value = fl.getValue("name.first");
+  const value = fl.getValue("name.first");
   expect(value).toEqual("Baz");
-  let values = fl.getValues();
+  const values = fl.getValues();
   expect(values).toEqual({name: {first: "Baz"}});
   fireEvent.change(input, {target: {value: "Foo"}});
   expect(fl.getValue("name.first")).toBe("Foo");
@@ -185,7 +185,7 @@ test("nested schema", () => {
   act(() => {
     fl.setValues();
   });
-  let valid = fl.isValid();
+  const valid = fl.isValid();
   expect(valid).toBe(false);
 });
 
@@ -193,7 +193,7 @@ test("extract differences", () => {
   const {getByLabelText} = render(<Form {...props}/>);
   fireEvent.change(getByLabelText("Test Input"), {target: {value: "9876"}});
   act(() => {
-    let differences = fl.extractDifferences(fl.originalData, ["testInput"]);
+    const differences = fl.extractDifferences(fl.originalData, ["testInput"]);
     expect(differences).toEqual({testInput: 9876});
   });
 });
@@ -208,7 +208,7 @@ test("update schema", () => {
 
 test("compare props and nextProps", () => {
   render(<Form {...props}/>);
-  let props = {
+  const currentProps = {
     formLinker: {
       data: {
         testInput: "123"
@@ -218,8 +218,8 @@ test("compare props and nextProps", () => {
     },
     fieldName: "testInput",
     otherData: "somethingElse",
-  }
-  let nextProps = {
+  };
+  const nextProps = {
     formLinker: {
       data: {
         testInput: "123"
@@ -229,26 +229,26 @@ test("compare props and nextProps", () => {
     },
     fieldName: "testInput",
     otherData: "somethingElse",
-  }
-  let areEqual = fl.arePropsEqual(props, nextProps, "testInput");
+  };
+  let areEqual = fl.arePropsEqual(currentProps, nextProps, "testInput");
   expect(areEqual).toBe(true);
-  
+
   nextProps.formLinker.data.testInput = "456";
-  areEqual = fl.arePropsEqual(props, nextProps, "testInput");
+  areEqual = fl.arePropsEqual(currentProps, nextProps, "testInput");
   expect(areEqual).toBe(false);
 
   const errors = ["required"];
   nextProps.formLinker.data.testInput = "123";
   nextProps.formLinker.errors.testInput = errors;
-  areEqual = fl.arePropsEqual(props, nextProps, "testInput");
+  areEqual = fl.arePropsEqual(currentProps, nextProps, "testInput");
   expect(areEqual).toBe(false);
-  
-  props.formLinker.errors.testInput = errors;
-  areEqual = fl.arePropsEqual(props, nextProps, "testInput");
+
+  currentProps.formLinker.errors.testInput = errors;
+  areEqual = fl.arePropsEqual(currentProps, nextProps, "testInput");
   expect(areEqual).toBe(true);
-  
-  nextProps.formLinker = props.formLinker;
+
+  nextProps.formLinker = currentProps.formLinker;
   nextProps.otherData = "changedValue";
-  areEqual = fl.arePropsEqual(props, nextProps, "testInput");
+  areEqual = fl.arePropsEqual(currentProps, nextProps, "testInput");
   expect(areEqual).toBe(false);
 });
