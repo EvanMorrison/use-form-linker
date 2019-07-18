@@ -1,6 +1,11 @@
 ## [Unreleased]
 -
 
+## V1.0.3
+- provide minified production build & development build
+- increase test coverage
+- improve handling state updates
+
 ## V1.0.2
 - add function to help with optimizations using React.memo or shouldComponentUpdate;
 
