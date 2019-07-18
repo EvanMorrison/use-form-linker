@@ -55,7 +55,7 @@ module.exports = (env, argv) => {
       filename: isProduction ? "use-form-linker.production.min.js" : "use-form-linker.development.js",
       path: path.join(__dirname, "dist"),
       library: "use-form-linker",
-      libraryTarget: "commonjs2",
+      libraryTarget: "umd",
     }
   });
 };

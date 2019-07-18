@@ -12,14 +12,13 @@ import { cloneDeep, get, isEmpty, isEqual, isEqualWith, isNil, keys, set, unset 
  */
 
 const useFormLinker = (config = {}) => {
-  const initialData = config.data || {};
+  const initialData = useRef(config.data || {});
   const initialSchema = config.schema || {};
-  const [originalData, setOriginalData] = useState();
   const [fields, setFields] = useState(calcFields(initialSchema));
   const [schema, setSchema] = useState(initialSchema);
   const [state, setState] = useState({
     data: {},
-    parsedData: initialData,
+    parsedData: initialData.current,
     errors: {}
   });
 
@@ -177,9 +176,8 @@ const useFormLinker = (config = {}) => {
   }, [convert, fields]);
 
   useEffect(() => {
-    setOriginalData(initialData);
-    setValuesFromParsed(initialData);
-  }, [initialData, setValuesFromParsed]);
+    setValuesFromParsed(initialData.current);
+  }, [setValuesFromParsed]);
 
   /**
    * VALIDATION
@@ -265,7 +263,7 @@ const useFormLinker = (config = {}) => {
     data: state.data,
     parsedData: state.parsedData,
     errors: state.errors,
-    originalData,
+    originalData: initialData.current,
     schema,
     fields,
     calcFields: () => setFields(calcFields(schema)),

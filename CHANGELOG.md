@@ -1,5 +1,6 @@
 ## [Unreleased]
--
+- change build to umd
+- fix excessive updates occurring when setting original data
 
 ## V1.0.3
 - provide minified production build & development build
