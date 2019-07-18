@@ -13,6 +13,7 @@ module.exports = {
       "standard",
       "import",
       "react",
+      "react-hooks",
   ],
   "rules": {
     "comma-dangle": ["error", "only-multiline"],
@@ -30,6 +31,8 @@ module.exports = {
     "no-unused-vars": ["error", {"vars": "all", "varsIgnorePattern": "React|^_$", "args": "none", "ignoreRestSiblings": false}],
     "object-curly-spacing": 0,
     "quotes": ["error", "double"],
+    "react-hooks/exhaustive-deps": "warn",
+    "react-hooks/rules-of-hooks": "error",
     "semi": ["error", "always"],
     "space-before-function-paren": ["error", "never"],
     "space-unary-ops": [2, {"words": true, "nonwords": false, "overrides": {"typeof": false}}],

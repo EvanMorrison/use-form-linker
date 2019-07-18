@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "lint": "eslint src test",
-    "build": "babel src --out-dir dist",
+    "build": "node_modules/.bin/webpack --env.production --progress && node_modules/.bin/webpack --env.development --progress",
     "test": "jest --silent"
   },
   "repository": {
@@ -37,14 +37,20 @@
     "@babel/preset-react": "^7.0.0",
     "@testing-library/react": "^8.0.5",
     "babel-eslint": "^10.0.2",
+    "babel-loader": "^8.0.6",
+    "clean-webpack-plugin": "^3.0.0",
     "eslint": "^6.0.1",
     "eslint-config-standard": "^13.0.1",
+    "eslint-loader": "^2.2.1",
     "eslint-plugin-import": "^2.18.0",
     "eslint-plugin-node": "^9.1.0",
     "eslint-plugin-promise": "^4.2.1",
     "eslint-plugin-react": "^7.14.2",
+    "eslint-plugin-react-hooks": "^1.6.1",
     "eslint-plugin-standard": "^4.0.0",
     "form-formatters": "^1.2.3",
-    "jest": "^24.8.0"
+    "jest": "^24.8.0",
+    "webpack": "^4.36.1",
+    "webpack-cli": "^3.3.6"
   }
 }
