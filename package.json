@@ -1,6 +1,6 @@
 {
   "name": "use-form-linker",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "description": "links form elements together using React hooks",
   "main": "index.js",
   "scripts": {
