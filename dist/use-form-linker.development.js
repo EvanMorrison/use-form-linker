@@ -1,5 +1,14 @@
-module.exports =
-/******/ (function(modules) { // webpackBootstrap
+(function webpackUniversalModuleDefinition(root, factory) {
+	if(typeof exports === 'object' && typeof module === 'object')
+		module.exports = factory(require("lodash"), require("react"));
+	else if(typeof define === 'function' && define.amd)
+		define(["lodash", "react"], factory);
+	else if(typeof exports === 'object')
+		exports["use-form-linker"] = factory(require("lodash"), require("react"));
+	else
+		root["use-form-linker"] = factory(root["_"], root["react"]);
+})(window, function(__WEBPACK_EXTERNAL_MODULE_lodash__, __WEBPACK_EXTERNAL_MODULE_react__) {
+return /******/ (function(modules) { // webpackBootstrap
 /******/ 	// The module cache
 /******/ 	var installedModules = {};
 /******/
@@ -106,7 +115,7 @@ eval("__webpack_require__.r(__webpack_exports__);\n/* harmony export (binding) *
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-eval("module.exports = require(\"lodash\");\n\n//# sourceURL=webpack://use-form-linker/external_%7B%22commonjs%22:%22lodash%22,%22commonjs2%22:%22lodash%22,%22amd%22:%22lodash%22,%22root%22:%22_%22%7D?");
+eval("module.exports = __WEBPACK_EXTERNAL_MODULE_lodash__;\n\n//# sourceURL=webpack://use-form-linker/external_%7B%22commonjs%22:%22lodash%22,%22commonjs2%22:%22lodash%22,%22amd%22:%22lodash%22,%22root%22:%22_%22%7D?");
 
 /***/ }),
 
@@ -117,8 +126,9 @@ eval("module.exports = require(\"lodash\");\n\n//# sourceURL=webpack://use-form-
 /*! no static exports found */
 /***/ (function(module, exports) {
 
-eval("module.exports = require(\"react\");\n\n//# sourceURL=webpack://use-form-linker/external_%22react%22?");
+eval("module.exports = __WEBPACK_EXTERNAL_MODULE_react__;\n\n//# sourceURL=webpack://use-form-linker/external_%22react%22?");
 
 /***/ })
 
 /******/ });
+});
