@@ -17,13 +17,11 @@ const useFormLinker = (config = {}) => {
   const [originalData, setOriginalData] = useState();
   const [fields, setFields] = useState(calcFields(initialSchema));
   const [schema, setSchema] = useState(initialSchema);
-  const [data, setData] = useState({});
-  const [parsedData, setParsedData] = useState(initialData);
-  const [formErrors, setFormErrors] = useState({});
-
-  // const converters = useCallback(() => (config.converters || {}), [config.converters]);
-  // const formatters = useCallback(() => (config.formatters || {}), [config.formatters]);
-  // const masks = useCallback(() => (config.masks || {}), [config.masks]);
+  const [state, setState] = useState({
+    data: {},
+    parsedData: initialData,
+    errors: {}
+  });
 
   const converters = useRef(config.converters || {});
   const formatters = useRef(config.formatters || {});
@@ -44,17 +42,13 @@ const useFormLinker = (config = {}) => {
    * FORMATTING HELPER FUNCTIONS
    */
 
-  // useEffect(() => {
-  //   console.log("useeffect");
-  // }, [setValuesFromParsed, fields, convert, initialData, schema]);
-
   const convert = useCallback(function(fieldName, value) {
     const key = get(schema, fieldName) || "";
     return(key.split(".").reduce((converted, converter) => {
       if(isNil(converters.current[converter])) { return(converted); }
       return(converters.current[converter](value));
     }, value));
-  }, [converters.current, schema]);
+  }, [schema]);
 
   function format(fieldName, value) {
     const key = get(schema, fieldName) || "";
@@ -77,39 +71,52 @@ const useFormLinker = (config = {}) => {
    */
 
   function getError(fieldName) {
-    return(get(formErrors, fieldName) || []);
+    return(get(state.errors, fieldName) || []);
   }
 
   function setError(fieldName, newErrors) {
-    setFormErrors(formErrors => {
-      if(isEmpty(newErrors)) {
-        const nextErrors = cloneDeep(formErrors);
-        unset(nextErrors, fieldName);
-        if(fieldName.includes(".")) {
-          let currentPath = fieldName.slice(0, fieldName.lastIndexOf("."));
-          while(currentPath) {
-            if(isEmpty(get(nextErrors, currentPath))) {
-              unset(nextErrors, currentPath);
-              currentPath = currentPath.slice(0, currentPath.lastIndexOf("."));
-            } else {
-              break;
-            }
-          }
-        }
-        return(nextErrors);
-      } else {
-        const nextErrors = set({}, fieldName, newErrors);
-        return({...formErrors, ...nextErrors});
-      }
+    setState(state => {
+      return(calculateErrorsForState(fieldName, newErrors, state));
     });
   }
 
   function getErrors() {
-    return(formErrors);
+    return(state.errors);
   }
 
   function setErrors(newErrors) {
-    setFormErrors(newErrors);
+    setState(state => ({
+      ...state,
+      errors: newErrors
+    }));
+  }
+
+  function calculateErrorsForState(fieldName, newErrors, state) {
+    if(isEmpty(newErrors)) {
+      const nextErrors = cloneDeep(state.errors);
+      unset(nextErrors, fieldName);
+      if(fieldName.includes(".")) {
+        let currentPath = fieldName.slice(0, fieldName.lastIndexOf("."));
+        while(currentPath) {
+          if(isEmpty(get(nextErrors, currentPath))) {
+            unset(nextErrors, currentPath);
+            currentPath = currentPath.slice(0, currentPath.lastIndexOf("."));
+          } else {
+            break;
+          }
+        }
+      }
+      return({
+        ...state,
+        errors: nextErrors
+      });
+    } else {
+      const nextErrors = set({}, fieldName, newErrors);
+      return({
+        ...state,
+        errors: {...state.errors, ...nextErrors}
+      });
+    }
   }
 
   /**
@@ -117,20 +124,23 @@ const useFormLinker = (config = {}) => {
    */
 
   function getValue(fieldName) {
-    return(get(data, fieldName));
+    return(get(state.data, fieldName));
   }
 
   function setValue(fieldName, value) {
-    const nextData = set({}, fieldName, mask(fieldName, value));
-    const {errors, parsed} = format(fieldName, value);
-    const nextParsedData = set({}, fieldName, parsed);
-    setData(data => ({...data, ...nextData}));
-    setParsedData(parsedData => ({...parsedData, ...nextParsedData}));
-    if(isEmpty(errors) && !isEmpty(get(formErrors, fieldName))) { setError(fieldName, []); }
+    setState(state => {
+      const nextData = set({}, fieldName, mask(fieldName, value));
+      const nextParsedData = set({}, fieldName, format(fieldName, value).parsed);
+      return({
+        ...state,
+        data: {...state.data, ...nextData},
+        parsedData: {...state.parsedData, ...nextParsedData}
+      });
+    });
   }
 
   function getValues() {
-    return(data);
+    return(state.data);
   }
 
   function setValues(values) {
@@ -143,8 +153,13 @@ const useFormLinker = (config = {}) => {
         set(nextParsedData, fieldName, format(fieldName, value).parsed);
       }
     });
-    setData(nextData);
-    setParsedData(nextParsedData);
+    setState(state => {
+      return({
+        ...state,
+        data: nextData,
+        parsedData: nextParsedData
+      });
+    });
   }
 
   const setValuesFromParsed = useCallback(function(values) {
@@ -155,7 +170,10 @@ const useFormLinker = (config = {}) => {
         set(nextData, fieldName, convert(fieldName, value));
       }
     });
-    setData(data => ({...data, ...nextData}));
+    setState(state => ({
+      ...state,
+      data: {...state.data, ...nextData}
+    }));
   }, [convert, fields]);
 
   useEffect(() => {
@@ -180,46 +198,35 @@ const useFormLinker = (config = {}) => {
   }
 
   function validate(fieldName) {
-    let newParsed;
-    setData(data => {
-      const {errors, formatted, parsed} = format(fieldName, get(data, fieldName));
-      newParsed = parsed;
-      setError(fieldName, errors);
+    setState(state => {
+      const {errors, formatted, parsed} = format(fieldName, get(state.data, fieldName));
       const nextData = set({}, fieldName, formatted);
-      return({...data, ...nextData});
-    });
-    setParsedData(parsedData => {
-      const nextParsedData = set({}, fieldName, newParsed);
-      return({...parsedData, ...nextParsedData});
+      const nextParsedData = set({}, fieldName, parsed);
+      const newState = {
+        ...state,
+        data: {...state.data, ...nextData},
+        parsedData: {...state.parsedData, ...nextParsedData}
+      };
+      return(calculateErrorsForState(fieldName, errors, newState));
     });
   }
 
   function validateAll() {
-    const nextErrors = {};
-    const nextData = {};
-    const nextParsedData = {};
-    let currentData;
-    setData(data => {
+    setState(state => {
+      const nextErrors = {};
+      const nextData = {};
+      const nextParsedData = {};
       fields.forEach(field => {
-        const {formatted} = format(field, get(data, field));
+        const {errors, formatted, parsed} = format(field, get(state.data, field));
         set(nextData, field, formatted);
-      });
-      currentData = nextData;
-      return(nextData);
-    });
-    setParsedData(_ => {
-      fields.forEach(field => {
-        const {parsed} = format(field, get(currentData, field));
         set(nextParsedData, field, parsed);
-      });
-      return(nextParsedData);
-    });
-    setFormErrors(_ => {
-      fields.forEach(field => {
-        const {errors} = format(field, get(currentData, field));
         set(nextErrors, field, errors);
       });
-      return(nextErrors);
+      return({
+        data: nextData,
+        parsedData: nextParsedData,
+        errors: nextErrors,
+      });
     });
   }
 
@@ -230,10 +237,10 @@ const useFormLinker = (config = {}) => {
   function extractDifferences(original) {
     const differences = {};
     fields.forEach((field) => {
-      if((isNil(get(original, field)) || get(original, field) === "") && (isNil(get(parsedData, field)) || get(parsedData, field) === "")) {
+      if((isNil(get(original, field)) || get(original, field) === "") && (isNil(get(state.parsedData, field)) || get(state.parsedData, field) === "")) {
         // do nothing
-      } else if(!isEqual(get(original, field), get(parsedData, field))) {
-        set(differences, field, get(parsedData, field));
+      } else if(!isEqual(get(original, field), get(state.parsedData, field))) {
+        set(differences, field, get(state.parsedData, field));
       }
     });
     return(differences);
@@ -247,7 +254,7 @@ const useFormLinker = (config = {}) => {
     setSchema(newSchema);
     setFields(calcFields(newSchema));
     validateAll();
-    setFormErrors({});
+    setErrors({});
   }
 
   /**
@@ -255,11 +262,11 @@ const useFormLinker = (config = {}) => {
    */
 
   return({
-    data,
-    parsedData,
+    data: state.data,
+    parsedData: state.parsedData,
+    errors: state.errors,
     originalData,
     schema,
-    errors: formErrors,
     fields,
     calcFields: () => setFields(calcFields(schema)),
     convert,
