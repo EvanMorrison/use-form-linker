@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 import { cloneDeep, get, isEmpty, isEqual, isEqualWith, isNil, keys, set, unset } from "lodash";
 
 /**
@@ -21,14 +21,13 @@ const useFormLinker = (config = {}) => {
   const [parsedData, setParsedData] = useState(initialData);
   const [formErrors, setFormErrors] = useState({});
 
-  const converters = config.converters || {};
-  const formatters = config.formatters || {};
-  const masks = config.masks || {};
+  // const converters = useCallback(() => (config.converters || {}), [config.converters]);
+  // const formatters = useCallback(() => (config.formatters || {}), [config.formatters]);
+  // const masks = useCallback(() => (config.masks || {}), [config.masks]);
 
-  useEffect(() => {
-    setOriginalData(initialData);
-    setValuesFromParsed(initialData);
-  }, []);
+  const converters = useRef(config.converters || {});
+  const formatters = useRef(config.formatters || {});
+  const masks = useRef(config.masks || {});
 
   function calcFields(schema, prefix = "", newFields = []) {
     keys(schema).forEach((key) => {
@@ -45,27 +44,31 @@ const useFormLinker = (config = {}) => {
    * FORMATTING HELPER FUNCTIONS
    */
 
-  function convert(fieldName, value) {
+  // useEffect(() => {
+  //   console.log("useeffect");
+  // }, [setValuesFromParsed, fields, convert, initialData, schema]);
+
+  const convert = useCallback(function(fieldName, value) {
     const key = get(schema, fieldName) || "";
     return(key.split(".").reduce((converted, converter) => {
-      if(isNil(converters[converter])) { return(converted); }
-      return(converters[converter](value));
+      if(isNil(converters.current[converter])) { return(converted); }
+      return(converters.current[converter](value));
     }, value));
-  }
+  }, [converters.current, schema]);
 
   function format(fieldName, value) {
     const key = get(schema, fieldName) || "";
     return(key.split(".").reduce((response, formatter) => {
-      if(isNil(formatters[formatter])) { return(response); }
-      return(formatters[formatter](response));
+      if(isNil(formatters.current[formatter])) { return(response); }
+      return(formatters.current[formatter](response));
     }, {errors: [], formatted: value, parsed: value, valid: true}));
   }
 
   function mask(fieldName, value) {
     const key = get(schema, fieldName) || "";
     return(key.split(".").reduce((response, mask) => {
-      if(isNil(masks[mask])) { return response; }
-      return(masks[mask].mask(value));
+      if(isNil(masks.current[mask])) { return response; }
+      return(masks.current[mask].mask(value));
     }, value));
   }
 
@@ -144,7 +147,7 @@ const useFormLinker = (config = {}) => {
     setParsedData(nextParsedData);
   }
 
-  function setValuesFromParsed(values) {
+  const setValuesFromParsed = useCallback(function(values) {
     const nextData = {};
     fields.forEach((fieldName) => {
       const value = get(values, fieldName);
@@ -153,7 +156,12 @@ const useFormLinker = (config = {}) => {
       }
     });
     setData(data => ({...data, ...nextData}));
-  }
+  }, [convert, fields]);
+
+  useEffect(() => {
+    setOriginalData(initialData);
+    setValuesFromParsed(initialData);
+  }, [initialData, setValuesFromParsed]);
 
   /**
    * VALIDATION
@@ -172,27 +180,47 @@ const useFormLinker = (config = {}) => {
   }
 
   function validate(fieldName) {
-    const {errors, formatted, parsed} = format(fieldName, getValue(fieldName));
-    setError(fieldName, errors);
-    const nextData = set({}, fieldName, formatted);
-    setData(data => ({...data, ...nextData}));
-    const nextParsed = set({}, fieldName, parsed);
-    setParsedData(parsedData => ({...parsedData, ...nextParsed}));
+    let newParsed;
+    setData(data => {
+      const {errors, formatted, parsed} = format(fieldName, get(data, fieldName));
+      newParsed = parsed;
+      setError(fieldName, errors);
+      const nextData = set({}, fieldName, formatted);
+      return({...data, ...nextData});
+    });
+    setParsedData(parsedData => {
+      const nextParsedData = set({}, fieldName, newParsed);
+      return({...parsedData, ...nextParsedData});
+    });
   }
 
   function validateAll() {
     const nextErrors = {};
     const nextData = {};
     const nextParsedData = {};
-    fields.forEach((field) => {
-      const {errors, formatted, parsed} = format(field, getValue(field));
-      set(nextErrors, field, errors);
-      set(nextData, field, formatted);
-      set(nextParsedData, field, parsed);
+    let currentData;
+    setData(data => {
+      fields.forEach(field => {
+        const {formatted} = format(field, get(data, field));
+        set(nextData, field, formatted);
+      });
+      currentData = nextData;
+      return(nextData);
     });
-    setFormErrors(nextErrors);
-    setData(nextData);
-    setParsedData(nextParsedData);
+    setParsedData(_ => {
+      fields.forEach(field => {
+        const {parsed} = format(field, get(currentData, field));
+        set(nextParsedData, field, parsed);
+      });
+      return(nextParsedData);
+    });
+    setFormErrors(_ => {
+      fields.forEach(field => {
+        const {errors} = format(field, get(currentData, field));
+        set(nextErrors, field, errors);
+      });
+      return(nextErrors);
+    });
   }
 
   /**
