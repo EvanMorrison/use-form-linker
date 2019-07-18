@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "lint": "eslint src test",
-    "build": "node_modules/.bin/webpack --progress",
+    "build": "node_modules/.bin/webpack --env.production --progress && node_modules/.bin/webpack --env.development --progress",
     "test": "jest --silent"
   },
   "repository": {
