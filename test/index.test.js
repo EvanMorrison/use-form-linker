@@ -8,24 +8,17 @@ let fl, props;
 
 const defaultConverters = {
   currency: fn.CurrencyConverter,
-  date: fn.DateConverter,
-  phoneString: fn.PhoneStringConverter,
 };
 
 const defaultFormatters = {
   currency: fn.CurrencyFormatter,
-  date: fn.DateFormatter,
-  email: fn.EmailFormatter,
   number: fn.NumberFormatter,
-  phoneString: fn.PhoneStringConverter,
   required: fn.RequiredFormatter,
 };
 
 const defaultMasks = {
   currency: fn.CurrencyMask,
-  email: fn.EmailMask,
-  number: fn.NumberMask,
-  phoneString: fn.PhoneStringMask,
+  number: fn.NumberFormatter,
 };
 
 const defaultOptions = {
@@ -83,21 +76,34 @@ afterEach(() => {
 });
 
 test("formatted initial value", () => {
-  const {container} = render(<Form {...props}/>);
-  const input = container.querySelector("input");
+  const {getByLabelText} = render(<Form {...props}/>);
+  const input = getByLabelText("Test Input");
   expect(input.value).toBe("1,234.00");
 });
 
 test("set value is masked for data type", () => {
   props.initialValue = null;
-  const {container} = render(<Form {...props}/>);
-  const input = container.querySelector("input");
-  act(() => {
-    fl.setValue("testInput", "$567.8foo");
-  });
+  const {getByLabelText} = render(<Form {...props}/>);
+  const input = getByLabelText("Test Input");
+  fireEvent.change(input, {target: {value: "$567.8foo"}});
   expect(input.value).toBe("567.8");
-  expect(fl.getValue("testInput")).toBe("567.8");
+  fireEvent.blur(input);
+  expect(input.value).toBe("567.80");
+  expect(fl.getValue("testInput")).toBe("567.80");
   expect(fl.parsedData["testInput"]).toBe(567.8);
+});
+
+test("unchanged values returns same state", () => {
+  render(<Form {...props}/>);
+  const initData = fl.data;
+  act(() => {
+    fl.setValues({testInput: "1,234.00"});
+    fl.setValue("testInput", "1,234.00");
+    fl.validate("testInput");
+    fl.setError("testInput", []);
+
+  });
+  expect(fl.data).toBe(initData);
 });
 
 test("creates validation error", () => {
@@ -110,7 +116,7 @@ test("creates validation error", () => {
   expect(label.textContent).toMatch("FormFormatters.required");
 });
 
-test("set errors", () => {
+test("set and clear errors", () => {
   props.options.schema = {
     name: {
       first: "string.required",
@@ -130,6 +136,30 @@ test("set errors", () => {
     fl.setError("name.last", []);
   });
   expect(fl.getErrors()).toEqual({name: {first: ["not your real name"]}});
+  console.log("last check");
+  act(() => {
+    fl.setError("name.first", []);
+  });
+  expect(fl.getErrors()).toEqual({});
+});
+
+test("clear error on deeply nested schema", () => {
+  props.options.schema = {
+    credit: {
+      values: {
+        score: "number",
+      },
+      labels: {
+        score: "string",
+      }
+    }
+  };
+  render(<Form {...props}/>);
+  act(() => {
+    fl.setErrors({credit: {values: {score: ["invalid score"]}, labels: {score: ["not a good label"]}}});
+    fl.setError("credit.values.score", []);
+  });
+  expect(fl.getErrors()).toEqual({credit: {labels: {score: ["not a good label"]}}});
 });
 
 test("empty options", () => {
