@@ -70,7 +70,7 @@ const useFormLinker = (config = {}) => {
    */
 
   const calculateErrorsForState = useCallback(function(fieldName, newErrors, state) {
-    if(isEqual(get(state.errors, fieldName), newErrors)) {
+    if(isEqual(get(state.errors, fieldName, []), newErrors)) {
       return(state);
     } else if(isEmpty(newErrors)) {
       const nextErrors = cloneDeep(state.errors);
@@ -105,7 +105,7 @@ const useFormLinker = (config = {}) => {
 
   const setError = useCallback(function(fieldName, newErrors) {
     setState(state => {
-      const current = get(state, fieldName);
+      const current = get(state.errors, fieldName, []);
       if(isEqual(current, newErrors)) {
         return(state);
       } else {
@@ -226,7 +226,7 @@ const useFormLinker = (config = {}) => {
         data: {...state.data, ...nextData},
         parsedData: {...state.parsedData, ...nextParsedData}
       };
-      if(isEqual(get(state.errors, fieldName), errors) && isEqual(state, newState)) {
+      if(isEqual(get(state.errors, fieldName, []), errors) && isEqual(state, newState)) {
         return(state);
       } else {
         return(calculateErrorsForState(fieldName, errors, newState));
