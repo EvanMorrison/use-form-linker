@@ -12,6 +12,17 @@ import { cloneDeep, get, isEmpty, isEqual, isEqualWith, isNil, keys, set, unset 
  */
 
 const useFormLinker = (config = {}) => {
+  const calcFields = useCallback(function(schema, prefix = "", newFields = []) {
+    keys(schema).forEach((key) => {
+      if(typeof schema[key] === "object") {
+        calcFields(schema[key], prefix + key + ".", newFields);
+      } else {
+        newFields.push(prefix + key);
+      }
+    });
+    return(newFields);
+  }, []);
+
   const initialData = useRef(config.data || {});
   const initialSchema = config.schema || {};
   const [fields, setFields] = useState(calcFields(initialSchema));
@@ -26,17 +37,6 @@ const useFormLinker = (config = {}) => {
   const formatters = useRef(config.formatters || {});
   const masks = useRef(config.masks || {});
 
-  function calcFields(schema, prefix = "", newFields = []) {
-    keys(schema).forEach((key) => {
-      if(typeof schema[key] === "object") {
-        calcFields(schema[key], prefix + key + ".", newFields);
-      } else {
-        newFields.push(prefix + key);
-      }
-    });
-    return(newFields);
-  }
-
   /**
    * FORMATTING HELPER FUNCTIONS
    */
@@ -49,49 +49,30 @@ const useFormLinker = (config = {}) => {
     }, value));
   }, [schema]);
 
-  function format(fieldName, value) {
+  const format = useCallback(function(fieldName, value) {
     const key = get(schema, fieldName) || "";
     return(key.split(".").reduce((response, formatter) => {
       if(isNil(formatters.current[formatter])) { return(response); }
       return(formatters.current[formatter](response));
     }, {errors: [], formatted: value, parsed: value, valid: true}));
-  }
+  }, [schema]);
 
-  function mask(fieldName, value) {
+  const mask = useCallback(function(fieldName, value) {
     const key = get(schema, fieldName) || "";
     return(key.split(".").reduce((response, mask) => {
       if(isNil(masks.current[mask])) { return response; }
       return(masks.current[mask].mask(value));
     }, value));
-  }
+  }, [schema]);
 
   /**
    * ERRORS
    */
 
-  function getError(fieldName) {
-    return(get(state.errors, fieldName) || []);
-  }
-
-  function setError(fieldName, newErrors) {
-    setState(state => {
-      return(calculateErrorsForState(fieldName, newErrors, state));
-    });
-  }
-
-  function getErrors() {
-    return(state.errors);
-  }
-
-  function setErrors(newErrors) {
-    setState(state => ({
-      ...state,
-      errors: newErrors
-    }));
-  }
-
-  function calculateErrorsForState(fieldName, newErrors, state) {
-    if(isEmpty(newErrors)) {
+  const calculateErrorsForState = useCallback(function(fieldName, newErrors, state) {
+    if(isEqual(get(state.errors, fieldName), newErrors)) {
+      return(state);
+    } else if(isEmpty(newErrors)) {
       const nextErrors = cloneDeep(state.errors);
       unset(nextErrors, fieldName);
       if(fieldName.includes(".")) {
@@ -116,33 +97,69 @@ const useFormLinker = (config = {}) => {
         errors: {...state.errors, ...nextErrors}
       });
     }
-  }
+  }, []);
+
+  const getError = useCallback(function(fieldName) {
+    return(get(state.errors, fieldName) || []);
+  }, [state.errors]);
+
+  const setError = useCallback(function(fieldName, newErrors) {
+    setState(state => {
+      const current = get(state, fieldName);
+      if(isEqual(current, newErrors)) {
+        return(state);
+      } else {
+        return(calculateErrorsForState(fieldName, newErrors, state));
+      }
+    });
+  }, [calculateErrorsForState]);
+
+  const getErrors = useCallback(function() {
+    return(state.errors);
+  }, [state.errors]);
+
+  const setErrors = useCallback(function(newErrors) {
+    setState(state => {
+      if(isEqual(state.errors, newErrors)) {
+        return(state);
+      } else {
+        return({
+          ...state,
+          errors: newErrors
+        });
+      }
+    });
+  }, []);
 
   /**
    * VALUES
    */
 
-  function getValue(fieldName) {
+  const getValue = useCallback(function(fieldName) {
     return(get(state.data, fieldName));
-  }
+  }, [state.data]);
 
-  function setValue(fieldName, value) {
+  const setValue = useCallback(function(fieldName, value) {
     setState(state => {
-      const nextData = set({}, fieldName, mask(fieldName, value));
-      const nextParsedData = set({}, fieldName, format(fieldName, value).parsed);
-      return({
-        ...state,
-        data: {...state.data, ...nextData},
-        parsedData: {...state.parsedData, ...nextParsedData}
-      });
+      if(isEqual(get(state.data, fieldName), value)) {
+        return(state);
+      } else {
+        const nextData = set({}, fieldName, mask(fieldName, value));
+        const nextParsedData = set({}, fieldName, format(fieldName, value).parsed);
+        return({
+          ...state,
+          data: {...state.data, ...nextData},
+          parsedData: {...state.parsedData, ...nextParsedData}
+        });
+      }
     });
-  }
+  }, [format, mask]);
 
-  function getValues() {
+  const getValues = useCallback(function() {
     return(state.data);
-  }
+  }, [state.data]);
 
-  function setValues(values) {
+  const setValues = useCallback(function(values) {
     const nextData = {};
     const nextParsedData = {};
     fields.forEach((fieldName) => {
@@ -153,13 +170,17 @@ const useFormLinker = (config = {}) => {
       }
     });
     setState(state => {
-      return({
-        ...state,
-        data: nextData,
-        parsedData: nextParsedData
-      });
+      if(isEqual(state.data, nextData)) {
+        return(state);
+      } else {
+        return({
+          ...state,
+          data: nextData,
+          parsedData: nextParsedData
+        });
+      }
     });
-  }
+  }, [fields, format, mask]);
 
   const setValuesFromParsed = useCallback(function(values) {
     const nextData = {};
@@ -183,7 +204,7 @@ const useFormLinker = (config = {}) => {
    * VALIDATION
    */
 
-  function isValid() {
+  const isValid = useCallback(function() {
     let flag = true;
     for(let i = 0; i < fields.length; i++) {
       const {valid} = format(fields[i], getValue(fields[i]));
@@ -193,9 +214,9 @@ const useFormLinker = (config = {}) => {
       }
     }
     return(flag);
-  }
+  }, [fields, format, getValue]);
 
-  function validate(fieldName) {
+  const validate = useCallback(function(fieldName) {
     setState(state => {
       const {errors, formatted, parsed} = format(fieldName, get(state.data, fieldName));
       const nextData = set({}, fieldName, formatted);
@@ -205,11 +226,15 @@ const useFormLinker = (config = {}) => {
         data: {...state.data, ...nextData},
         parsedData: {...state.parsedData, ...nextParsedData}
       };
-      return(calculateErrorsForState(fieldName, errors, newState));
+      if(isEqual(get(state.errors, fieldName), errors) && isEqual(state, newState)) {
+        return(state);
+      } else {
+        return(calculateErrorsForState(fieldName, errors, newState));
+      }
     });
-  }
+  }, [calculateErrorsForState, format]);
 
-  function validateAll() {
+  const validateAll = useCallback(function() {
     setState(state => {
       const nextErrors = {};
       const nextData = {};
@@ -218,21 +243,26 @@ const useFormLinker = (config = {}) => {
         const {errors, formatted, parsed} = format(field, get(state.data, field));
         set(nextData, field, formatted);
         set(nextParsedData, field, parsed);
-        set(nextErrors, field, errors);
+        if(!isEmpty(errors)) { set(nextErrors, field, errors); }
       });
-      return({
+      const nextState = {
         data: nextData,
         parsedData: nextParsedData,
         errors: nextErrors,
-      });
+      };
+      if(isEqual(state, nextState)) {
+        return(state);
+      } else {
+        return(nextState);
+      }
     });
-  }
+  }, [fields, format]);
 
   /**
    * DIFFERENCES
    */
 
-  function extractDifferences(original) {
+  const extractDifferences = useCallback(function(original) {
     const differences = {};
     fields.forEach((field) => {
       if((isNil(get(original, field)) || get(original, field) === "") && (isNil(get(state.parsedData, field)) || get(state.parsedData, field) === "")) {
@@ -242,18 +272,18 @@ const useFormLinker = (config = {}) => {
       }
     });
     return(differences);
-  }
+  }, [fields, state.parsedData]);
 
   /**
    * SCHEMA
    */
 
-  function updateSchema(newSchema = {}) {
+  const updateSchema = useCallback(function(newSchema = {}) {
     setSchema(newSchema);
     setFields(calcFields(newSchema));
     validateAll();
     setErrors({});
-  }
+  }, [calcFields, setErrors, validateAll]);
 
   /**
    * RETURN OBJECT: containing state and functions with the same interface as the FormLinker class from "form-linker".
@@ -266,7 +296,7 @@ const useFormLinker = (config = {}) => {
     originalData: initialData.current,
     schema,
     fields,
-    calcFields: () => setFields(calcFields(schema)),
+    calcFields: useCallback(() => setFields(calcFields(schema)), [calcFields, schema]),
     convert,
     format,
     mask,

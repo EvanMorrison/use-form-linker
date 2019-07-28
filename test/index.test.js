@@ -124,11 +124,12 @@ test("set errors", () => {
     fl.setValue("name.first", "Susan");
     fl.validateAll();
   });
-  expect(fl.getErrors()).toEqual({name: {first: [], last: ["FormFormatters.required"]}});
-  act(() => {
-    fl.setError("name.first", []);
-  });
   expect(fl.getErrors()).toEqual({name: {last: ["FormFormatters.required"]}});
+  act(() => {
+    fl.setError("name.first", ["not your real name"]);
+    fl.setError("name.last", []);
+  });
+  expect(fl.getErrors()).toEqual({name: {first: ["not your real name"]}});
 });
 
 test("empty options", () => {
