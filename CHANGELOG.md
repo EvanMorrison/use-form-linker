@@ -1,6 +1,10 @@
 ## [Unreleased]
 -
 
+## V1.0.5
+- wrap additional functions in useCallback
+- return same state when values/errors do not change 
+
 ## V1.0.4
 - specify libraryTarget to be umd to fix problem loading in browsers.
 - fix excessive updates occurring when setting original data.
